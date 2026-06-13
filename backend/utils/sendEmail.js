@@ -38,6 +38,7 @@ const sendEmail = async ({ to, subject, html, devResetUrl }) => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      family: 4, // force IPv4 — Render can't route outbound IPv6 (ENETUNREACH)
     });
 
     // Verify the connection config before trying to send
