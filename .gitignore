@@ -18,8 +18,7 @@ dist-ssr/
 build/
 *.local
 
-# ── Backend runtime uploads (user-generated content) ──
-backend/uploads/
+
 
 # ── Logs ──
 logs/
