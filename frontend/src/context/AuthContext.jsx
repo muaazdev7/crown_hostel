@@ -47,8 +47,21 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    if (token && savedUser) {
-      const parsed = JSON.parse(savedUser);
+
+    // Guard against bad/legacy values: a missing field once stored the literal
+    // string "undefined"/"null", which crashes JSON.parse on reload.
+    const isUsable = (v) => v && v !== 'undefined' && v !== 'null';
+
+    let parsed = null;
+    if (isUsable(savedUser)) {
+      try {
+        parsed = JSON.parse(savedUser);
+      } catch {
+        parsed = null;
+      }
+    }
+
+    if (isUsable(token) && parsed) {
       setUser(parsed);
       // If it's a mock token, skip server verification
       if (token.startsWith('mock-token-')) {
@@ -57,8 +70,10 @@ export const AuthProvider = ({ children }) => {
       }
       getMe()
         .then((res) => {
-          setUser(res.data.user);
-          localStorage.setItem('user', JSON.stringify(res.data.user));
+          if (res.data?.user) {
+            setUser(res.data.user);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+          }
         })
         .catch(() => {
           // Backend unreachable but we have saved user — keep session alive
@@ -66,6 +81,9 @@ export const AuthProvider = ({ children }) => {
         })
         .finally(() => setLoading(false));
     } else {
+      // No valid session (or corrupt localStorage) — clean up and continue.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setLoading(false);
     }
   }, []);
@@ -74,6 +92,10 @@ export const AuthProvider = ({ children }) => {
     // 1. Try real backend first
     try {
       const { data } = await loginUser({ email, password });
+      // Don't persist a malformed response (avoids storing the string "undefined").
+      if (!data?.token || !data?.user) {
+        throw new Error('Invalid login response from server');
+      }
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);

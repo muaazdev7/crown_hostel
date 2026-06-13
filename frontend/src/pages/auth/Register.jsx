@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, Phone, Building2, MailCheck } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Phone, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -19,7 +19,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
-  const [verifySent, setVerifySent] = useState(false); // student check-email screen
 
   const validate = () => {
     const errs = {};
@@ -43,9 +42,10 @@ export default function Register() {
     try {
       const { confirmPassword, ...payload } = form;
       const result = await register(payload);
-      // Students must verify their email — show the check-inbox screen
+      // Students must verify their email — go to the notice screen (no login/token).
       if (result?.requiresVerification) {
-        setVerifySent(true);
+        navigate('/verify-notice', { state: { email: form.email } });
+        return;
       }
     } catch (err) {
       setApiError(
@@ -58,29 +58,6 @@ export default function Register() {
   };
 
   const setField = (field) => (e) => setForm({ ...form, [field]: e.target.value });
-
-  // ── Student "check your email" confirmation screen ──
-  if (verifySent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-dark-50 p-6">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-sm border border-dark-100 p-8 text-center">
-            <div className="flex justify-center mb-5">
-              <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center">
-                <MailCheck className="w-9 h-9 text-primary-600" />
-              </div>
-            </div>
-            <h2 className="text-xl font-bold text-dark-900 mb-2">Check your email</h2>
-            <p className="text-dark-500 text-sm">
-              We've sent a verification link to <span className="font-medium text-dark-700">{form.email}</span>.
-              Click it to activate your account, then sign in.
-            </p>
-            <Link to="/login" className="btn btn-primary w-full mt-6">Go to Sign in</Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-dark-50 p-6">
