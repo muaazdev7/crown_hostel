@@ -113,7 +113,7 @@ export default function Login() {
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-bold text-dark-900 group-hover:text-primary-600 transition-colors duration-200">
-                HostelMS
+                Crown Hostel
               </span>
             </button>
           </div>

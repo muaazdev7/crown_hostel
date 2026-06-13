@@ -3,6 +3,28 @@ const Invoice = require('../models/Invoice.model');
 const Payment = require('../models/Payment.model');
 const Student = require('../models/Student.model');
 
+// Build the next "<LABEL>-<year>-<seq>" id from the HIGHEST existing one for
+// the current year (e.g. RCP-2026-0007 → RCP-2026-0008). This avoids the
+// collisions that a document-count produces when records are deleted or created
+// concurrently. Zero-padding keeps the sort lexicographically correct (≤9999/yr).
+const buildSequentialId = async (Model, field, label) => {
+  const prefix = `${label}-${new Date().getFullYear()}-`;
+  const last = await Model.findOne({ [field]: { $regex: `^${prefix}` } })
+    .sort({ [field]: -1 })
+    .select(field)
+    .lean();
+
+  let next = 1;
+  if (last) {
+    const parsed = parseInt(last[field].slice(prefix.length), 10);
+    if (!Number.isNaN(parsed)) next = parsed + 1;
+  }
+  return `${prefix}${String(next).padStart(4, '0')}`;
+};
+
+const buildReceiptNumber = () => buildSequentialId(Payment, 'receiptNumber', 'RCP');
+const buildInvoiceNumber = () => buildSequentialId(Invoice, 'invoiceNumber', 'INV');
+
 // ── Fee Structures ──────────────────────────────────────────────
 
 // GET /api/fees/structures
@@ -133,21 +155,31 @@ const createInvoice = async (req, res) => {
       return res.status(400).json({ success: false, message: 'totalAmount must be greater than 0' });
     }
 
-    const count = await Invoice.countDocuments();
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
-
-    const invoice = await Invoice.create({
-      student: studentId,
-      feeStructure: feeStructureId || undefined,
-      invoiceNumber,
-      totalAmount: computedTotal,
-      discount: Number(discount) || 0,
-      fine,
-      dueDate,
-      description,
-      academicYear,
-      generatedBy: req.user._id,
-    });
+    // Create with retry on the rare duplicate-invoiceNumber race (see recordPayment).
+    let invoice;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        invoice = await Invoice.create({
+          student: studentId,
+          feeStructure: feeStructureId || undefined,
+          invoiceNumber: await buildInvoiceNumber(),
+          totalAmount: computedTotal,
+          discount: Number(discount) || 0,
+          fine,
+          dueDate,
+          description,
+          academicYear,
+          generatedBy: req.user._id,
+        });
+        break;
+      } catch (e) {
+        if (e.code === 11000 && e.keyPattern?.invoiceNumber && attempt < 4) continue;
+        throw e;
+      }
+    }
+    if (!invoice) {
+      return res.status(409).json({ success: false, message: 'Could not generate a unique invoice number. Please try again.' });
+    }
 
     const populated = await invoice.populate([
       { path: 'student', populate: { path: 'user', select: 'name email' } },
@@ -269,19 +301,32 @@ const recordPayment = async (req, res) => {
       }
     }
 
-    const count = await Payment.countDocuments();
-    const receiptNumber = `RCP-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
-
-    const payment = await Payment.create({
-      invoice: invoiceId,
-      student: studentId,
-      amountPaid: Number(amount),
-      method: paymentMode,
-      transactionId,
-      receiptNumber,
-      recordedBy: req.user._id,
-      remarks,
-    });
+    // Create the payment, retrying on the rare duplicate-receipt race: if two
+    // requests generate the same number, the unique index rejects one (E11000)
+    // and we recompute (the just-inserted row bumps the max) and try again.
+    let payment;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        payment = await Payment.create({
+          invoice: invoiceId,
+          student: studentId,
+          amountPaid: Number(amount),
+          method: paymentMode,
+          transactionId,
+          receiptNumber: await buildReceiptNumber(),
+          recordedBy: req.user._id,
+          remarks,
+        });
+        break;
+      } catch (e) {
+        // Retry only on a duplicate receiptNumber collision
+        if (e.code === 11000 && e.keyPattern?.receiptNumber && attempt < 4) continue;
+        throw e;
+      }
+    }
+    if (!payment) {
+      return res.status(409).json({ success: false, message: 'Could not generate a unique receipt number. Please try again.' });
+    }
 
     // Update invoice
     const newPaid = invoice.paidAmount + Number(amount);

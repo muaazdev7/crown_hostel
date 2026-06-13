@@ -97,7 +97,7 @@ export default function Register() {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold text-dark-900 group-hover:text-primary-600 transition-colors duration-200">
-              HostelMS
+              Crown Hostel
             </span>
           </button>
         </div>

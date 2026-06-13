@@ -387,11 +387,21 @@ const uploadStaffPhoto = async (req, res) => {
   }
 };
 
-// GET /api/staff/designations — distinct staff designations from the DB
+// Canonical staff designations the organization supports (kept in sync with the
+// admin "Add Staff" form). Returned alongside DB values so the student
+// maintenance form always shows the full set, not only designations that
+// currently happen to have a staff member.
+const STAFF_DESIGNATIONS = [
+  'Warden', 'Security Guard', 'Housekeeping', 'Maintenance',
+  'Cook', 'Receptionist', 'Other',
+];
+
+// GET /api/staff/designations — full designation list (canonical ∪ in-use)
 const getDesignations = async (req, res) => {
   try {
-    const designations = await Staff.distinct('designation');
-    res.json({ success: true, data: designations.filter(Boolean).sort() });
+    const inUse = await Staff.distinct('designation');
+    const all = [...new Set([...STAFF_DESIGNATIONS, ...inUse.filter(Boolean)])].sort();
+    res.json({ success: true, data: all });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
