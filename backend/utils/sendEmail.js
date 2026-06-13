@@ -28,6 +28,34 @@ const nodemailer = require('nodemailer');
 */
 
 const sendEmail = async ({ to, subject, html, devResetUrl }) => {
+  /* ── Brevo HTTP API (port 443) — works on Render, which blocks SMTP ports ── */
+  if (process.env.BREVO_API_KEY) {
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'Crown Hostel', email: fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(`Brevo API ${res.status}: ${detail}`);
+    }
+
+    const data = await res.json().catch(() => ({}));
+    console.log(`[Email] Sent to ${to} via Brevo — ${data.messageId || 'ok'}`);
+    return data;
+  }
+
   /* ── Production SMTP ─────────────────────────────────────────────────────── */
   if (process.env.EMAIL_HOST) {
     const transporter = nodemailer.createTransport({
