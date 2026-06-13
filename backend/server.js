@@ -17,7 +17,7 @@ app.use(cors({
   origin: [
     "http://localhost:3000",
     "http://localhost:5000",
-    "https://your-frontend-name.vercel.app"
+    "https://crown-hostel.vercel.app"
   ],
   credentials: true
 }));
