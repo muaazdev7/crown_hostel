@@ -84,38 +84,38 @@ export default function ApplicationPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try {
-      // Build payload matching backend validator structure
-      const payload = {
-        applicantName: user?.name || 'Student',
-        applicantEmail: user?.email || '',
-        registrationNo: form.registrationNo,
-        department: form.department,
-        semester: parseInt(form.semester),
-        gender: form.gender,
-        contactInfo: {
-          phone: form.phone,
-          alternatePhone: form.alternatePhone || undefined,
-          address: {
-            street: form.street || undefined,
-            city: form.city || undefined,
-            state: form.state || undefined,
-            pincode: form.postalcode || undefined,
-          },
+      // multipart/form-data: scalar fields flat, nested objects as JSON strings,
+      // files under "documents". The browser sets the multipart boundary.
+      const fd = new FormData();
+      fd.append('applicantName', user?.name || 'Student');
+      fd.append('applicantEmail', user?.email || '');
+      fd.append('registrationNo', form.registrationNo);
+      fd.append('department', form.department);
+      fd.append('semester', parseInt(form.semester));
+      fd.append('gender', form.gender);
+      fd.append('preferredRoomType', form.preferredRoomType);
+      fd.append('termsAccepted', 'true');
+      fd.append('contactInfo', JSON.stringify({
+        phone: form.phone,
+        alternatePhone: form.alternatePhone || undefined,
+        address: {
+          street: form.street || undefined,
+          city: form.city || undefined,
+          state: form.state || undefined,
+          pincode: form.postalcode || undefined,
         },
-        guardianDetails: {
-          name: form.guardianName,
-          phone: form.guardianPhone,
-          relation: form.guardianRelation || undefined,
-        },
-        preferredRoomType: form.preferredRoomType,
-        medicalInfo: form.hasCondition ? {
-          hasCondition: true,
-          details: form.medicalDetails,
-        } : { hasCondition: false },
-        termsAccepted: true,
-      };
+      }));
+      fd.append('guardianDetails', JSON.stringify({
+        name: form.guardianName,
+        phone: form.guardianPhone,
+        relation: form.guardianRelation || undefined,
+      }));
+      fd.append('medicalInfo', JSON.stringify(
+        form.hasCondition ? { hasCondition: true, details: form.medicalDetails } : { hasCondition: false }
+      ));
+      docs.forEach((file) => fd.append('documents', file));
 
-      await submitApplication(payload);
+      await submitApplication(fd);
       toast.success('Application submitted successfully!');
       setShowForm(false);
       setForm(INITIAL);
@@ -136,8 +136,7 @@ export default function ApplicationPage() {
   };
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setDocs(files.map(f => f.name));
+    setDocs(Array.from(e.target.files)); // keep real File objects for upload
   };
 
   const hasPending = applications.some(a => a.status === 'pending');
@@ -253,12 +252,12 @@ export default function ApplicationPage() {
             <label className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-dark-200 rounded-xl cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 transition-colors">
               <Upload className="w-5 h-5 text-dark-400" />
               <span className="text-sm text-dark-500">Click to upload ID / admission letter</span>
-              <input type="file" multiple className="hidden" onChange={handleFileChange} />
+              <input type="file" multiple accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} />
             </label>
             {docs.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {docs.map((d, i) => (
-                  <span key={i} className="text-xs bg-dark-100 text-dark-600 px-2 py-1 rounded-lg">{d}</span>
+                  <span key={i} className="text-xs bg-dark-100 text-dark-600 px-2 py-1 rounded-lg">{d.name}</span>
                 ))}
               </div>
             )}

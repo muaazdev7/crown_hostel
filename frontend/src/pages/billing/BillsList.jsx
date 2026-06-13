@@ -10,6 +10,7 @@ import Select from '../../components/common/Select';
 import Badge from '../../components/common/Badge';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { getBills, createBill, updateBill, deleteBill } from '../../api';
+import { getImageUrl } from '../../utils/imageUrl';
 import { BILL_TYPES, PAYMENT_STATUSES, MONTHS, typeLabel, fmtDate, fmtMoney } from './billConstants';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -243,7 +244,7 @@ export default function BillsList() {
                 </button>
               )}
               {!fileName && editing?.attachment && (
-                <a href={`${API_BASE}/${editing.attachment}`} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
+                <a href={getImageUrl(editing.attachment)} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
                   <FileText className="w-3.5 h-3.5" /> Current file
                 </a>
               )}
@@ -281,7 +282,7 @@ export default function BillsList() {
             {detail.description && <div><p className="text-xs font-medium text-dark-400 mb-1">Description</p><p className="text-sm text-dark-700 bg-dark-50 rounded-lg px-3 py-2">{detail.description}</p></div>}
             {detail.remarks && <div><p className="text-xs font-medium text-dark-400 mb-1">Remarks</p><p className="text-sm text-dark-700 bg-dark-50 rounded-lg px-3 py-2">{detail.remarks}</p></div>}
             {detail.attachment && (
-              <a href={`${API_BASE}/${detail.attachment}`} target="_blank" rel="noreferrer" className="btn btn-secondary w-fit">
+              <a href={getImageUrl(detail.attachment)} target="_blank" rel="noreferrer" className="btn btn-secondary w-fit">
                 <Download className="w-4 h-4" /> View Attachment
               </a>
             )}

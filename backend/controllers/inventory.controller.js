@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Inventory = require('../models/Inventory.model');
 const ExpenseReportDeletion = require('../models/ExpenseReportDeletion.model');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 // GET /api/inventory
 // Condition is an Admin-only concern. Staff requests get condition-related
@@ -42,7 +43,15 @@ const createInventoryItem = async (req, res) => {
       return res.status(400).json({ success: false, message: 'name, category and totalQuantity are required' });
     }
 
-    const image = req.file ? req.file.path.replace(/\\/g, '/').replace(/^.*uploads/, 'uploads') : '';
+    // Upload image to Cloudinary (util deletes the temp file in all cases).
+    let image = '';
+    if (req.file) {
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/inventory');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      image = result.secure_url;
+    }
 
     const price = purchasePrice ? Number(purchasePrice) : 0;
 
@@ -95,13 +104,13 @@ const updateInventoryItem = async (req, res) => {
       updates.totalQuantity = newTotal;
     }
 
-    // If a new image was uploaded, replace the old one
+    // If a new image was uploaded, push it to Cloudinary (abort on failure)
     if (req.file) {
-      if (item.image) {
-        const oldPath = path.join(__dirname, '..', item.image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/inventory');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
       }
-      updates.image = req.file.path.replace(/\\/g, '/').replace(/^.*uploads/, 'uploads');
+      updates.image = result.secure_url;
     }
 
     const updated = await Inventory.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).populate('block', 'name');

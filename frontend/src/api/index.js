@@ -37,6 +37,11 @@ export const registerUser = (data) => API.post('/auth/register', data);
 export const getMe = () => API.get('/auth/me');
 export const verifyEmail = (token) => API.get(`/auth/verify-email/${token}`);
 
+// ── Uploads (Cloudinary) ──
+// Pass a FormData with the file under key "image". Do NOT set Content-Type —
+// the browser/axios sets multipart/form-data + boundary automatically.
+export const uploadProfilePictureCloudinary = (formData) => API.post('/uploads/profile-picture', formData);
+
 // ── Students ──
 export const getStudents = (params) => API.get('/students', { params });
 export const getStudent = (id) => API.get(`/students/${id}`);

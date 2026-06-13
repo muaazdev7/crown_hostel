@@ -8,6 +8,7 @@ const { protect } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 const { authorizeWarden } = require('../middleware/warden.middleware');
 const uploadBill = require('../middleware/uploadBill.middleware');
+const uploadTemp = require('../middleware/multer.middleware'); // Cloudinary temp storage
 
 router.use(protect);
 
@@ -21,12 +22,12 @@ router.get('/stats', authorizeWarden, getBillStats);
 // List + create — warden & admin
 router.route('/')
   .get(authorizeWarden, getBills)
-  .post(authorizeWarden, uploadBill.single('attachment'), createBill);
+  .post(authorizeWarden, uploadTemp.single('attachment'), createBill);
 
 // View + update — warden & admin; Delete — admin only
 router.route('/:id')
   .get(authorizeWarden, getBill)
-  .put(authorizeWarden, uploadBill.single('attachment'), updateBill)
+  .put(authorizeWarden, uploadTemp.single('attachment'), updateBill)
   .delete(authorize('admin'), deleteBill);
 
 module.exports = router;

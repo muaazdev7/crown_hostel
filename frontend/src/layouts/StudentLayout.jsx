@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getMyProfile } from '../api';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getImageUrl } from '../utils/imageUrl';
 
 const NAV = [
   { to: '/student', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -95,7 +94,7 @@ export default function StudentLayout() {
   useEffect(() => {
     getMyProfile()
       .then(({ data }) => {
-        if (data.data?.profileImage) setProfileImage(`${API_BASE}${data.data.profileImage}`);
+        if (data.data?.profileImage) setProfileImage(getImageUrl(data.data.profileImage));
       })
       .catch(() => {});
   }, []);

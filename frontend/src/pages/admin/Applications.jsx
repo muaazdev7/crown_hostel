@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Eye, CheckCircle, XCircle, ClipboardList, Search, Home, Trash2 } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, ClipboardList, Search, Home, Trash2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../../utils/imageUrl';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
@@ -290,6 +291,24 @@ export default function Applications() {
               <div>
                 <p className="text-xs text-dark-400 uppercase font-medium mb-1">Medical Info</p>
                 <p className="text-sm text-dark-700 p-3 bg-amber-50 rounded-xl">{selected.medicalInfo.details}</p>
+              </div>
+            )}
+            {selected.documents?.length > 0 && (
+              <div>
+                <p className="text-xs text-dark-400 uppercase font-medium mb-1">Documents</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.documents.map((url, i) => (
+                    <a
+                      key={i}
+                      href={getImageUrl(url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-primary-600 hover:underline inline-flex items-center gap-1 bg-primary-50 px-2.5 py-1.5 rounded-lg"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> Document {i + 1}
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
             {selected.remarks && (

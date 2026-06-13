@@ -2,9 +2,7 @@ const MaintenanceRequest = require('../models/MaintenanceRequest.model');
 const Student = require('../models/Student.model');
 const Staff = require('../models/Staff.model');
 const Notification = require('../models/Notification.model');
-
-const toWebPath = (file) =>
-  file ? file.path.replace(/\\/g, '/').replace(/^.*uploads/, 'uploads') : '';
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 const populateRequest = (q) =>
   q.populate({ path: 'assignedStaff', populate: { path: 'user', select: 'name' } })
@@ -40,6 +38,16 @@ const createMaintenanceRequest = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Selected staff member is invalid for this designation' });
     }
 
+    // Optional issue photo → Cloudinary (abort on failure)
+    let image = '';
+    if (req.file) {
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/maintenance');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      image = result.secure_url;
+    }
+
     const request = await MaintenanceRequest.create({
       student: student._id,
       studentUser: req.user._id,
@@ -51,7 +59,7 @@ const createMaintenanceRequest = async (req, res) => {
       issueTitle,
       issueDescription,
       priority: priority || 'medium',
-      image: toWebPath(req.file),
+      image,
       assignedDesignation,
       assignedStaff: selectedStaff._id,
       assignedStaffName: selectedStaff.user?.name || '',

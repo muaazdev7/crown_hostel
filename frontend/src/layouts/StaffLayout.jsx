@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getStaffProfile } from '../api';
+import { getImageUrl } from '../utils/imageUrl';
 
 const NAV = [
   { to: '/staff',             label: 'Dashboard',  icon: LayoutDashboard, end: true },
@@ -94,7 +95,7 @@ export default function StaffLayout() {
   useEffect(() => {
     getStaffProfile()
       .then(({ data }) => {
-        if (data.data?.profileImage) setProfileImage(data.data.profileImage);
+        if (data.data?.profileImage) setProfileImage(getImageUrl(data.data.profileImage));
       })
       .catch(() => {});
   }, []);

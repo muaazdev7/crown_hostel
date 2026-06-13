@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { getInventory, createInventoryItem, updateInventoryItem, useInventoryItem, addStockInventoryItem, deleteInventoryItem, getBlocks, updateRepairStatus } from '../../api';
 import InventoryReports from './InventoryReports';
 import InventoryExpenseReports from './InventoryExpenseReports';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -145,7 +146,7 @@ export default function ManageInventory() {
       supplier: item.supplier || '',
     });
     setImageFile(null);
-    setImagePreview(item.image ? `${API_BASE}/${item.image}` : '');
+    setImagePreview(item.image ? getImageUrl(item.image) : '');
     setShowEdit(true);
   };
 
@@ -171,7 +172,7 @@ export default function ManageInventory() {
   const renderItemHeader = (item) => (
     <div className="flex items-center gap-3">
       {item.image ? (
-        <img src={`${API_BASE}/${item.image}`} alt={item.name} className="w-14 h-14 rounded-lg object-cover" />
+        <img src={getImageUrl(item.image)} alt={item.name} className="w-14 h-14 rounded-lg object-cover" />
       ) : (
         <div className="w-14 h-14 rounded-lg bg-dark-100 flex items-center justify-center">
           <Package className="w-6 h-6 text-dark-400" />
@@ -334,7 +335,7 @@ export default function ManageInventory() {
       render: r => (
         <div className="flex items-center gap-3">
           {r.image ? (
-            <img src={`${API_BASE}/${r.image}`} alt={r.name} className="w-10 h-10 rounded-lg object-cover shrink-0" loading="lazy" />
+            <img src={getImageUrl(r.image)} alt={r.name} className="w-10 h-10 rounded-lg object-cover shrink-0" loading="lazy" />
           ) : (
             <div className="w-10 h-10 rounded-lg bg-dark-100 flex items-center justify-center shrink-0">
               <Package className="w-5 h-5 text-dark-400" />

@@ -18,6 +18,11 @@ dist-ssr/
 build/
 *.local
 
+# ── Upload artifacts (runtime / temp; assets live on Cloudinary) ──
+backend/uploads/
+backend/public/temp/
+**/public/temp/
+
 
 
 # ── Logs ──

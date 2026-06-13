@@ -1,4 +1,5 @@
 const Application = require('../models/Application.model');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 // @desc    Submit a new hostel application (public)
 // @route   POST /api/applications
@@ -8,7 +9,7 @@ const submitApplication = async (req, res) => {
     const {
       applicantName, registrationNo, applicantEmail, department, semester,
       gender, contactInfo, guardianDetails, preferredRoomType, preferredBlock,
-      medicalInfo, documents, termsAccepted,
+      medicalInfo, termsAccepted,
     } = req.body;
 
     // Business rule: only one active (pending/approved) application per registration
@@ -29,6 +30,18 @@ const submitApplication = async (req, res) => {
         success: false,
         message: 'Terms must be accepted before submission',
       });
+    }
+
+    // Upload any attached documents/images to Cloudinary (abort on failure).
+    const documents = [];
+    if (req.files && req.files.length) {
+      for (const file of req.files) {
+        const result = await uploadOnCloudinary(file.path, 'hostel-management/applications');
+        if (!result?.secure_url) {
+          return res.status(500).json({ success: false, message: 'Document upload failed' });
+        }
+        documents.push(result.secure_url);
+      }
     }
 
     const application = await Application.create({

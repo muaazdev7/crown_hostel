@@ -5,6 +5,7 @@ const Block = require('../models/Block.model');
 const RoomAllocation = require('../models/RoomAllocation.model');
 const Student = require('../models/Student.model');
 const Application = require('../models/Application.model');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 // Helper: delete an uploaded image file from disk
 const deleteImage = (imagePath) => {
@@ -76,7 +77,11 @@ const createRoom = async (req, res) => {
     };
 
     if (req.file) {
-      roomData.image = `/uploads/rooms/${req.file.filename}`;
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/rooms');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      roomData.image = result.secure_url;
     }
 
     const room = await Room.create(roomData);
@@ -112,8 +117,11 @@ const updateRoom = async (req, res) => {
     }
 
     if (req.file) {
-      deleteImage(room.image); // remove old image
-      updates.image = `/uploads/rooms/${req.file.filename}`;
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/rooms');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      updates.image = result.secure_url;
     }
 
     const updated = await Room.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true })

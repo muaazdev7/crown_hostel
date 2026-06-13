@@ -6,12 +6,12 @@ const {
 } = require('../controllers/maintenance.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
-const uploadMaintenance = require('../middleware/uploadMaintenance.middleware');
+const uploadTemp = require('../middleware/multer.middleware'); // Cloudinary temp storage
 
 router.use(protect);
 
 // Student — submit + view own requests
-router.post('/', authorize('student'), uploadMaintenance.single('image'), createMaintenanceRequest);
+router.post('/', authorize('student'), uploadTemp.single('image'), createMaintenanceRequest);
 router.get('/my-requests', authorize('student'), getMyRequests);
 
 // Staff — view requests routed to their designation

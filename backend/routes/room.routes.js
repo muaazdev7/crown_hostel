@@ -9,6 +9,7 @@ const { protect } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 const uploadBlock = require('../middleware/uploadBlock.middleware');
 const uploadRoom = require('../middleware/uploadRoom.middleware');
+const uploadTemp = require('../middleware/multer.middleware'); // Cloudinary temp storage
 
 router.use(protect);
 
@@ -28,11 +29,11 @@ router.post('/allocate', authorize('admin'), allocateRoom);
 // ── Rooms ──
 router.route('/')
   .get(authorize('admin', 'staff'), getRooms)
-  .post(authorize('admin'), uploadRoom.single('image'), createRoom);
+  .post(authorize('admin'), uploadTemp.single('image'), createRoom);
 
 router.route('/:id')
   .get(authorize('admin', 'staff'), getRoom)
-  .put(authorize('admin'), uploadRoom.single('image'), updateRoom)
+  .put(authorize('admin'), uploadTemp.single('image'), updateRoom)
   .delete(authorize('admin'), deleteRoom);
 
 module.exports = router;

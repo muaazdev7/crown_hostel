@@ -9,6 +9,7 @@ const Attendance = require('../models/Attendance.model');
 const Leave = require('../models/Leave.model');
 const Notification = require('../models/Notification.model');
 const InventoryAssignment = require('../models/InventoryAssignment.model');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 // GET /api/students
 const getStudents = async (req, res) => {
@@ -87,12 +88,23 @@ const createStudent = async (req, res) => {
     const existingRoll = await Student.findOne({ rollNumber });
     if (existingRoll) return res.status(400).json({ success: false, message: 'Roll number already exists' });
 
+    // Upload image to Cloudinary BEFORE creating records, so a failed upload
+    // aborts cleanly without leaving orphaned documents.
+    let profileImage;
+    if (req.file) {
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/profiles');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      profileImage = result.secure_url;
+    }
+
     const user = await User.create({ name, email, password, role: 'student', phone });
 
     const student = await Student.create({
       user: user._id, rollNumber, department, year, semester, gender, bloodGroup,
       guardianDetails, contactInfo,
-      ...(req.file ? { profileImage: `/uploads/${req.file.filename}` } : {}),
+      ...(profileImage ? { profileImage } : {}),
     });
 
     await User.findByIdAndUpdate(user._id, { profileRef: student._id, profileModel: 'Student' });
@@ -119,9 +131,13 @@ const updateStudent = async (req, res) => {
     if (guardianDetails) studentFields.guardianDetails = parseJsonField(guardianDetails);
     if (contactInfo) studentFields.contactInfo = parseJsonField(contactInfo);
 
-    // Handle profile image upload
+    // Handle profile image upload → Cloudinary (abort on failure)
     if (req.file) {
-      studentFields.profileImage = `/uploads/${req.file.filename}`;
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/profiles');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      studentFields.profileImage = result.secure_url;
     }
 
     // If rollNumber is being changed, check uniqueness
@@ -400,7 +416,7 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// POST /api/students/profile/photo — Upload profile photo for logged-in student
+// POST /api/students/profile/photo — Upload profile photo (Cloudinary)
 const uploadProfilePhoto = async (req, res) => {
   try {
     if (!req.file) {
@@ -412,23 +428,18 @@ const uploadProfilePhoto = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Student profile not found' });
     }
 
-    // Delete old profile image file if it exists
-    if (student.profileImage) {
-      const fs = require('fs');
-      const oldPath = require('path').join(__dirname, '..', student.profileImage);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
+    // Upload temp file → Cloudinary (util deletes the temp file in all cases).
+    const result = await uploadOnCloudinary(req.file.path, 'hostel-management/profiles');
+    if (!result?.secure_url) {
+      return res.status(500).json({ success: false, message: 'Image upload failed' });
     }
 
-    // Save new image path
-    const imagePath = `/uploads/profiles/${req.file.filename}`;
-    student.profileImage = imagePath;
+    student.profileImage = result.secure_url; // store the Cloudinary URL
     await student.save();
 
     res.json({
       success: true,
-      data: { profileImage: imagePath },
+      data: { profileImage: student.profileImage },
       message: 'Profile photo uploaded successfully',
     });
   } catch (err) {

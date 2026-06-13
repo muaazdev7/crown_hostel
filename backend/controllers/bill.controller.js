@@ -1,9 +1,5 @@
-const fs = require('fs');
-const path = require('path');
 const Bill = require('../models/Bill.model');
-
-const toWebPath = (file) =>
-  file ? file.path.replace(/\\/g, '/').replace(/^.*uploads/, 'uploads') : '';
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 const BILL_TYPES = [
   'electricity', 'internet', 'water', 'gas', 'generator_fuel',
@@ -34,6 +30,16 @@ const createBill = async (req, res) => {
     const amt = Number(amount);
     const tax = taxAmount != null && taxAmount !== '' ? Number(taxAmount) : 0;
 
+    // Optional receipt/bill file → Cloudinary (abort on failure)
+    let attachment = '';
+    if (req.file) {
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/bills');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Attachment upload failed' });
+      }
+      attachment = result.secure_url;
+    }
+
     const bill = await Bill.create({
       billNumber: billNumber?.trim() || await generateBillNumber(),
       billType, serviceProvider, referenceNumber,
@@ -45,7 +51,7 @@ const createBill = async (req, res) => {
       paymentDate: paymentDate || undefined,
       paymentStatus: paymentStatus || 'pending',
       description, remarks,
-      attachment: toWebPath(req.file),
+      attachment,
       createdBy: req.user._id,
     });
 
@@ -178,13 +184,13 @@ const updateBill = async (req, res) => {
     // Keep totalAmount consistent
     bill.totalAmount = Number(bill.amount) + Number(bill.taxAmount || 0);
 
-    // Replace attachment if a new file was uploaded
+    // Replace attachment if a new file was uploaded → Cloudinary (abort on fail)
     if (req.file) {
-      if (bill.attachment) {
-        const oldPath = path.join(__dirname, '..', bill.attachment);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/bills');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Attachment upload failed' });
       }
-      bill.attachment = toWebPath(req.file);
+      bill.attachment = result.secure_url;
     }
 
     await bill.save();
@@ -201,10 +207,7 @@ const deleteBill = async (req, res) => {
     const bill = await Bill.findById(req.params.id);
     if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
 
-    if (bill.attachment) {
-      const filePath = path.join(__dirname, '..', bill.attachment);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
+    // Attachment lives on Cloudinary; just remove the DB record.
     await Bill.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Bill deleted' });
   } catch (err) {

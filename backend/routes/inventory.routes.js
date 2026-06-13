@@ -11,21 +11,22 @@ const {
 const { protect } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 const uploadInventory = require('../middleware/uploadInventory.middleware');
+const uploadTemp = require('../middleware/multer.middleware'); // Cloudinary temp storage
 
 router.use(protect);
 
 // ── Inventory Reports (staff & admin can create / view own) ──
 // Must be declared before the '/:id' routes so they aren't matched as an id.
 router.post('/shortage-report', authorize('admin', 'staff'), createShortageReport);
-router.post('/damage-report', authorize('admin', 'staff'), uploadInventory.single('image'), createDamageReport);
+router.post('/damage-report', authorize('admin', 'staff'), uploadTemp.single('image'), createDamageReport);
 router.get('/my-reports', authorize('admin', 'staff'), getMyReports);
 
 router.route('/')
   .get(authorize('admin', 'staff'), getInventory)
-  .post(authorize('admin'), uploadInventory.single('image'), createInventoryItem);
+  .post(authorize('admin'), uploadTemp.single('image'), createInventoryItem);
 
 router.route('/:id')
-  .put(authorize('admin'), uploadInventory.single('image'), updateInventoryItem)
+  .put(authorize('admin'), uploadTemp.single('image'), updateInventoryItem)
   .delete(authorize('admin'), deleteInventoryItem);
 
 router.put('/:id/use', authorize('admin', 'staff'), useInventoryItem);

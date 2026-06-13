@@ -6,6 +6,7 @@ import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { adminGetMaintenance, adminCancelMaintenance, adminDeleteMaintenance } from '../../api';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const STATUSES = ['all', 'pending', 'assigned', 'in_progress', 'completed', 'rejected', 'cancelled'];
@@ -173,7 +174,7 @@ export default function ManageMaintenance() {
               </div>
               <div className="flex gap-1.5"><Badge status={detail.priority} /><Badge status={detail.status} /></div>
             </div>
-            {detail.image && <img src={`${API_BASE}/${detail.image}`} alt="Issue" className="max-h-52 rounded-lg border border-dark-200" />}
+            {detail.image && <img src={getImageUrl(detail.image)} alt="Issue" className="max-h-52 rounded-lg border border-dark-200" />}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Student Name" value={detail.studentName || '—'} />
               <Field label="Registration #" value={detail.registrationNumber || '—'} />

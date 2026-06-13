@@ -10,8 +10,7 @@ import {
   getInventory, createShortageReport, createDamageReport, getMyInventoryReports,
 } from '../../api';
 import toast from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getImageUrl } from '../../utils/imageUrl';
 
 export default function Inventory() {
   const [tab, setTab]               = useState('items'); // 'items' | 'reports'
@@ -206,7 +205,7 @@ export default function Inventory() {
                   {/* Image */}
                   <div className="relative h-40 overflow-hidden">
                     {item.image ? (
-                      <img src={`${API_BASE}/${item.image}`} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={getImageUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-dark-100 flex items-center justify-center">
                         <Package className="w-10 h-10 text-dark-300" />
@@ -331,7 +330,7 @@ export default function Inventory() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {shortageItem.image ? (
-                <img src={`${API_BASE}/${shortageItem.image}`} alt={shortageItem.name} className="w-16 h-16 rounded-xl object-cover" />
+                <img src={getImageUrl(shortageItem.image)} alt={shortageItem.name} className="w-16 h-16 rounded-xl object-cover" />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-dark-100 flex items-center justify-center">
                   <Package className="w-6 h-6 text-dark-300" />
@@ -377,7 +376,7 @@ export default function Inventory() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {damageItem.image ? (
-                <img src={`${API_BASE}/${damageItem.image}`} alt={damageItem.name} className="w-16 h-16 rounded-xl object-cover" />
+                <img src={getImageUrl(damageItem.image)} alt={damageItem.name} className="w-16 h-16 rounded-xl object-cover" />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-dark-100 flex items-center justify-center">
                   <Package className="w-6 h-6 text-dark-300" />

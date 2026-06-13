@@ -9,6 +9,7 @@ const Leave = require('../models/Leave.model');
 const Visitor = require('../models/Visitor.model');
 const InventoryReport = require('../models/InventoryReport.model');
 const Notification = require('../models/Notification.model');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 // Helper: parse fields that arrive as JSON strings from FormData
 const parseJsonField = (value) => {
@@ -70,11 +71,21 @@ const createStaff = async (req, res) => {
     const existingEmp = await Staff.findOne({ employeeId });
     if (existingEmp) return res.status(400).json({ success: false, message: 'Employee ID already exists' });
 
+    // Upload image to Cloudinary BEFORE creating records (abort cleanly on fail).
+    let profileImage;
+    if (req.file) {
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/profiles');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      profileImage = result.secure_url;
+    }
+
     const user = await User.create({ name, email, password, role: 'staff', phone });
     const staff = await Staff.create({
       user: user._id, employeeId, designation, department, gender,
       dateOfBirth, address, shift, assignedBlock, salary,
-      ...(req.file ? { profileImage: `/uploads/${req.file.filename}` } : {}),
+      ...(profileImage ? { profileImage } : {}),
     });
 
     await User.findByIdAndUpdate(user._id, { profileRef: staff._id, profileModel: 'Staff' });
@@ -101,9 +112,13 @@ const updateStaff = async (req, res) => {
     // Parse nested objects that come as strings when sent via FormData
     if (address) staffFields.address = parseJsonField(address);
 
-    // Handle profile image upload
+    // Handle profile image upload → Cloudinary (abort on failure)
     if (req.file) {
-      staffFields.profileImage = `/uploads/${req.file.filename}`;
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/profiles');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      staffFields.profileImage = result.secure_url;
     }
 
     // If employeeId is being changed, check uniqueness
@@ -366,15 +381,13 @@ const uploadStaffPhoto = async (req, res) => {
     const staff = await Staff.findOne({ user: req.user._id });
     if (!staff) return res.status(404).json({ success: false, message: 'Staff profile not found' });
 
-    // Delete old profile image if exists
-    if (staff.profileImage) {
-      const fs = require('fs');
-      const path = require('path');
-      const oldPath = path.join(__dirname, '..', staff.profileImage);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    // Upload temp file → Cloudinary (util deletes the temp file in all cases).
+    const result = await uploadOnCloudinary(req.file.path, 'hostel-management/profiles');
+    if (!result?.secure_url) {
+      return res.status(500).json({ success: false, message: 'Image upload failed' });
     }
 
-    staff.profileImage = `/uploads/profiles/${req.file.filename}`;
+    staff.profileImage = result.secure_url; // store the Cloudinary URL
     await staff.save();
 
     res.json({

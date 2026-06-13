@@ -8,8 +8,7 @@ import Textarea from '../../components/common/Textarea';
 import {
   getInventoryReports, respondToShortageReport, actionDamageReport,
 } from '../../api';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const SHORTAGE_STATUSES = ['in_review', 'resolved', 'rejected'];
 const DAMAGE_STATUSES = ['in_review', 'repair_scheduled', 'repaired', 'replaced', 'rejected'];
@@ -133,7 +132,7 @@ export default function InventoryReports() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {r.item?.image ? (
-                          <img src={`${API_BASE}/${r.item.image}`} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                          <img src={getImageUrl(r.item.image)} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
                         ) : (
                           <div className="w-8 h-8 rounded-lg bg-dark-100 flex items-center justify-center shrink-0">
                             <Package className="w-4 h-4 text-dark-400" />
@@ -179,7 +178,7 @@ export default function InventoryReports() {
             <div className="flex items-start gap-3">
               {detail.item?.image || detail.image ? (
                 <img
-                  src={`${API_BASE}/${detail.reportType === 'DAMAGE' && detail.image ? detail.image : detail.item?.image}`}
+                  src={getImageUrl(detail.reportType === 'DAMAGE' && detail.image ? detail.image : detail.item?.image)}
                   alt=""
                   className="w-20 h-20 rounded-xl object-cover"
                 />
@@ -222,7 +221,7 @@ export default function InventoryReports() {
             {detail.reportType === 'DAMAGE' && detail.image && (
               <div>
                 <p className="text-xs font-medium text-dark-500 mb-1">Photo</p>
-                <img src={`${API_BASE}/${detail.image}`} alt="Damage" className="max-h-48 rounded-lg border border-dark-200" />
+                <img src={getImageUrl(detail.image)} alt="Damage" className="max-h-48 rounded-lg border border-dark-200" />
               </div>
             )}
 

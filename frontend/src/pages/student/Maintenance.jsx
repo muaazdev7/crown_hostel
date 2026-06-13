@@ -9,6 +9,7 @@ import Textarea from '../../components/common/Textarea';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../../utils/imageUrl';
 import {
   getMyMaintenanceRequests, createMaintenanceRequest,
   getStaffDesignations, getStaffByDesignation,
@@ -224,7 +225,7 @@ export default function Maintenance() {
                           <p className="text-sm text-dark-700 mt-0.5">{r.issueDescription}</p>
                         </div>
                         {r.image && (
-                          <img src={`${API_BASE}/${r.image}`} alt="Issue" className="max-h-44 rounded-lg border border-dark-200" />
+                          <img src={getImageUrl(r.image)} alt="Issue" className="max-h-44 rounded-lg border border-dark-200" />
                         )}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           <Field label="Category" value={catLabel(r.category)} />

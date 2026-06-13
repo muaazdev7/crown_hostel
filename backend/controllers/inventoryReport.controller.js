@@ -2,6 +2,7 @@ const InventoryReport = require('../models/InventoryReport.model');
 const Inventory = require('../models/Inventory.model');
 const Notification = require('../models/Notification.model');
 const User = require('../models/User.model');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -87,13 +88,23 @@ const createDamageReport = async (req, res) => {
     const item = await Inventory.findById(itemId);
     if (!item) return res.status(404).json({ success: false, message: 'Inventory item not found' });
 
+    // Optional damage photo → Cloudinary (abort on failure)
+    let image = '';
+    if (req.file) {
+      const result = await uploadOnCloudinary(req.file.path, 'hostel-management/damage-reports');
+      if (!result?.secure_url) {
+        return res.status(500).json({ success: false, message: 'Image upload failed' });
+      }
+      image = result.secure_url;
+    }
+
     const report = await InventoryReport.create({
       reportType: 'DAMAGE',
       item: item._id,
       itemName: item.name,
       description,
       severity: severity || 'minor',
-      image: toWebPath(req.file),
+      image,
       reportedBy: req.user._id,
       reportedByName: req.user.name,
       status: 'pending',

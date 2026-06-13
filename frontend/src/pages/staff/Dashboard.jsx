@@ -10,7 +10,7 @@ import StatsCard from '../../components/common/StatsCard';
 import Badge from '../../components/common/Badge';
 import { getStaffDashboard } from '../../api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const fmtTime = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -47,7 +47,7 @@ export default function StaffDashboard() {
   const staffInfo = dashboard?.staff;
   const isWarden = staffInfo?.isWarden ?? (user?.designation === 'Warden');
 
-  const profileImg = staffInfo?.profileImage ? `${API_BASE}${staffInfo.profileImage}` : null;
+  const profileImg = getImageUrl(staffInfo?.profileImage);
 
   // ── Error state ──
   if (error && !loading) {

@@ -11,14 +11,22 @@ connectDB();
 
 const app = express();
 
-// Middleware
+// Allowed frontend origins (local dev + production). CLIENT_URL lets you add
+// the deployed frontend without editing code.
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://crown-hostel.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:5000",
-    "https://crown-hostel.vercel.app"
-  ],
-  credentials: true
+  origin: (origin, callback) => {
+    // allow non-browser tools (no Origin header) and any allow-listed origin
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked: origin ${origin} not allowed`));
+  },
+  credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -44,6 +52,7 @@ app.use("/api/visitors", require("./routes/visitor.routes"));
 app.use("/api/visitor-requests", require("./routes/visitorRequest.routes"));
 app.use("/api/bills", require("./routes/bill.routes"));
 app.use("/api/salaries", require("./routes/salary.routes"));
+app.use("/api/uploads", require("./routes/upload.routes"));
 
 // Health check
 app.get("/", (req, res) => {

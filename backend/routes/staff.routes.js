@@ -9,6 +9,7 @@ const { protect } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 const upload = require('../middleware/upload.middleware');
 const uploadProfile = require('../middleware/uploadProfile.middleware');
+const uploadTemp = require('../middleware/multer.middleware'); // Cloudinary temp storage
 
 router.use(protect);
 
@@ -20,16 +21,16 @@ router.get('/by-designation/:designation', authorize('student', 'staff', 'admin'
 router.get('/dashboard', authorize('staff'), getStaffDashboard);
 router.get('/profile', authorize('staff'), getStaffProfile);
 router.put('/profile', authorize('staff'), updateStaffProfile);
-router.post('/profile/photo', authorize('staff'), uploadProfile.single('profileImage'), uploadStaffPhoto);
+router.post('/profile/photo', authorize('staff'), uploadTemp.single('profileImage'), uploadStaffPhoto);
 
 // ── Admin management routes ──
 router.route('/')
   .get(authorize('admin'), getStaffList)
-  .post(authorize('admin'), upload.single('profileImage'), createStaff);
+  .post(authorize('admin'), uploadTemp.single('profileImage'), createStaff);
 
 router.route('/:id')
   .get(authorize('admin'), getStaff)
-  .put(authorize('admin'), upload.single('profileImage'), updateStaff)
+  .put(authorize('admin'), uploadTemp.single('profileImage'), updateStaff)
   .delete(authorize('admin'), deleteStaff);
 
 module.exports = router;

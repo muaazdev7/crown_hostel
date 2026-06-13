@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import Badge from '../../components/common/Badge';
 import { getStudentDashboard } from '../../api';
+import { getImageUrl } from '../../utils/imageUrl';
 import toast from 'react-hot-toast';
 
 export default function StudentDashboard() {
@@ -51,7 +52,7 @@ export default function StudentDashboard() {
   const { stats, recentComplaints, notifications, student } = data;
 
   // Build profile image source
-  const profileImg = student?.profileImage || null;
+  const profileImg = getImageUrl(student?.profileImage);
 
   const statCards = [
     {
