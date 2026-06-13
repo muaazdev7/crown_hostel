@@ -1,3 +1,4 @@
+import cors from "cors";
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -12,7 +13,14 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "https://your-frontend-name.vercel.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
